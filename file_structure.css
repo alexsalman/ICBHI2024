@@ -1,0 +1,25 @@
+ICBHI2024/
+│
+├── data/
+│   ├── Train/
+│   │   ├── P01/
+│   │   │   ├── fMRI_data.npz
+│   │   │   ├── ppg_data.npz
+│   │   │   ├── resp_data.npz
+│   │   │   └── labels.npz
+│   │   ├── P02/
+│   │   └── ...
+│   └── Test/
+│       ├── P17/
+│       └── ...
+│
+├── src/
+│   ├── data_loader.py
+│   ├── preprocessing.py
+│   ├── model.py
+│   ├── train.py
+│   ├── evaluate.py
+│   ├── predict.py
+│   └── main.py
+├── requirements.txt
+└── submission.csv
