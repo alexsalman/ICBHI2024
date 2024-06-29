@@ -12,6 +12,14 @@ from model import build_model
 
 def predict(model, subject_path, min_level, max_level):
     try:
+        # Print directory contents for debugging
+        print(f"Checking contents of {subject_path}...")
+        if os.path.isdir(subject_path):
+            print(os.listdir(subject_path))
+        else:
+            print(f"Directory {subject_path} does not exist.")
+            return None, None
+
         # Load and preprocess data
         print(f"Loading data from {subject_path}...")
         fMRI_data, ppg_data, resp_data, _ = load_data(subject_path)
@@ -33,13 +41,12 @@ def predict(model, subject_path, min_level, max_level):
         predictions = model.predict([fMRI_data, ppg_data, resp_data])
         class_preds, level_preds = predictions[0], predictions[1]
 
-        # Convert CLASS predictions to integers and adjust if necessary
-        class_preds = np.argmax(class_preds, axis=1) - 1  # Assuming the softmax outputs for 3 classes: {0, 1, 2}
+        # Convert CLASS predictions to integers and ensure they are in the range -1, 0, 1
+        class_preds = np.argmax(class_preds, axis=1) - 1  # Assuming the softmax outputs for 3 classes
+        class_preds = np.clip(class_preds, -1, 1)
 
         # Reverse scaling for level predictions
         level_preds = rescale_level_preds(level_preds, min_level, max_level)
-
-        # Clip level predictions to be within -4 to 4
         level_preds = np.clip(level_preds, -4, 4)
 
         return class_preds, level_preds
@@ -54,10 +61,13 @@ if __name__ == "__main__":
     test_subjects = ['P17', 'P18', 'P19', 'P20']
     model = build_model()
     model.load_weights('best_model.keras')
-    min_level, max_level = 0.0, 1.0
+    min_level, max_level = -4.0, 4.0
 
     for subject in test_subjects:
         subject_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'Test', subject)
+        if not os.path.isdir(subject_path):
+            print(f"Directory {subject_path} does not exist.")
+            continue
         class_preds, level_preds = predict(model, subject_path, min_level, max_level)
         if class_preds is not None and level_preds is not None:
             print(f'Class Predictions for {subject}: {class_preds}, Level Predictions: {level_preds}')

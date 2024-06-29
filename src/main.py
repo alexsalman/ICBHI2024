@@ -1,19 +1,18 @@
-# src/main.py
 import os
 import numpy as np
 import pandas as pd
 from train import train_model
-from evaluate import evaluate_model, load_test_data, rescale_level_preds
+from evaluate import evaluate_model, load_and_prepare_data
 from data_loader import load_data
 from predict import predict
 
 def main():
     print(f"Current working directory: {os.getcwd()}")
 
-    data_dir = '../ICBHI2024/data/Train'
-    test_dir = '../ICBHI2024/data/Test'
-    submission_template_path = '../ICBHI2024/data/Supplementary/submission.csv'
-    output_submission_path = '../ICBHI2024/submission.csv'
+    data_dir = 'data/Train'
+    test_dir = 'data/Test'
+    submission_template_path = 'data/Supplementary/submission.csv'
+    output_submission_path = 'submission.csv'
 
     # Verify directories exist
     if not os.path.exists(data_dir):
@@ -33,23 +32,17 @@ def main():
 
     # Load validation data
     val_subject_path = os.path.join(data_dir, 'P16')
-    fMRI_data, ppg_data, resp_data, labels = load_data(val_subject_path)
+    val_data, val_labels = load_and_prepare_data(val_subject_path)
 
-    if fMRI_data is None or ppg_data is None or resp_data is None or labels is None:
+    if val_data is None or val_labels is None:
         print("Validation data loading failed.")
         return
-
-    class_labels, level_labels = labels[:, 0], labels[:, 1]
-
-    fMRI_data = fMRI_data[..., np.newaxis]  # Shape (samples, 246, 25, 1)
-    ppg_data = ppg_data[..., np.newaxis]  # Shape (samples, 10000, 1)
-    resp_data = resp_data[..., np.newaxis]  # Shape (samples, 10000, 1)
 
     # Evaluate the model on validation set
     print("Evaluating the model on validation set...")
     try:
-        class_accuracy, level_mae, class_preds, level_preds = evaluate_model(model, [fMRI_data, ppg_data, resp_data], labels)
-        print(f'Validation Class Accuracy: {class_accuracy}, Validation Level MAE: {level_mae}')
+        class_accuracy, level_rmse, class_preds, level_preds = evaluate_model(model, val_data, val_labels, min_level, max_level)
+        print(f'Validation Class Accuracy: {class_accuracy}, Validation Level RMSE: {level_rmse}')
     except Exception as e:
         print(f"An error occurred during evaluation: {e}")
 
